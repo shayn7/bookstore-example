@@ -196,4 +196,11 @@ public class BookResource {
         return bookService.findCheapBooks(pageable);
     }
 
+    @GetMapping("/books/cheap")
+    @ResponseStatus(HttpStatus.OK)
+    public List<Book> getBooksByAuthor(){
+        log.debug("REST request to get author's list of books");
+        return bookService.findCheapBooks();
+    }
+
 }

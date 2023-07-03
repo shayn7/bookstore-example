@@ -1,5 +1,6 @@
 package com.interview.bookstore.web.rest;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.interview.bookstore.domain.Book;
 import com.interview.bookstore.repository.BookRepository;
 import com.interview.bookstore.service.BookService;
@@ -16,7 +17,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -196,11 +196,11 @@ public class BookResource {
         return bookService.findCheapBooks(pageable);
     }
 
-    @GetMapping("/books/cheap")
+    @GetMapping("/books/author")
     @ResponseStatus(HttpStatus.OK)
-    public List<Book> getBooksByAuthor(){
+    public List<String> getBooksByAuthor(@RequestParam("author") String author) throws JsonProcessingException {
         log.debug("REST request to get author's list of books");
-        return bookService.findCheapBooks();
+        return bookService.findBooksByAuthor(author);
     }
 
 }

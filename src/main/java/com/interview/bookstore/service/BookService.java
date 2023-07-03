@@ -1,7 +1,10 @@
 package com.interview.bookstore.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.interview.bookstore.domain.Book;
+import com.interview.bookstore.model.Result;
+import com.interview.bookstore.model.RootResults;
 import com.interview.bookstore.repository.BookRepository;
 
 import java.util.List;
@@ -10,27 +13,41 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.client.WebClient;
 
 /**
  * Service Implementation for managing {@link Book}.
  */
 @Service
 @Transactional
+@PropertySource("external-rest-provider.properties")
 public class BookService {
 
     private final Logger log = LoggerFactory.getLogger(BookService.class);
 
     private final BookRepository bookRepository;
+    private final WebClient webClient;
+    private final ObjectMapper objectMapper;
+
+
+    @Value("${api-key}")
+    private String apiKey;
+    @Value("${base-url}")
+    private String url;
 
 
 
-    public BookService(BookRepository bookRepository) {
+    public BookService(BookRepository bookRepository, WebClient webClient, ObjectMapper objectMapper) {
         this.bookRepository = bookRepository;
+        this.webClient = webClient;
+        this.objectMapper = objectMapper;
     }
 
     /**
@@ -126,4 +143,21 @@ public class BookService {
         List<Book> books = bookRepository.findAll().stream().filter(book -> book.getPrice() <= 20).collect(Collectors.toList());
         return new PageImpl<>(books, pageable, books.size());
     }
+
+    public List<String> findBooksByAuthor(String authorName) throws JsonProcessingException {
+        String queryParams = "api-key=" + apiKey + "&author=" + authorName;
+        String payload = url + queryParams;
+        String jsonResponse = getJsonResponseFromExternalApi(payload);
+        RootResults rootResults = objectMapper.readValue(jsonResponse, RootResults.class);
+        return rootResults.results.stream().map(Result::getBook_title).collect(Collectors.toList());
+    }
+
+    private String getJsonResponseFromExternalApi(String url) {
+        return webClient.get()
+            .uri(url)
+            .retrieve()
+            .bodyToMono(String.class)
+            .block();
+    }
+
 }
